@@ -30,6 +30,11 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (err) {
       if (!err.response && (err.code === 'ERR_NETWORK' || err.message === 'Network Error')) {
+        if (import.meta.env.PROD) {
+          throw import.meta.env.VITE_API_URL
+            ? 'Cannot reach API — check CORS on Laravel and that the API URL is correct.'
+            : 'API URL missing: In Vercel → Settings → Environment Variables add VITE_API_URL (your Laravel API, e.g. https://api.example.com/api), then redeploy.';
+        }
         throw 'Cannot reach API. Start Laravel: cd backend && php artisan serve --port=8000';
       }
       throw err.response?.data?.message || err.message || 'Login failed';
