@@ -6,7 +6,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-  withCredentials: true,
+  // false: Bearer token auth does not need cookies; true can trigger mobile "local network / other apps" prompts
+  withCredentials: false,
 });
 
 // Add token to requests
