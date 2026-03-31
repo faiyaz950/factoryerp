@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { productionAPI, materialAPI } from '../services/api';
+import { apiErrorMessage } from '../utils/apiError';
 import toast from 'react-hot-toast';
 import { Plus, Edit2, Trash2, Filter, X, Factory, Calendar, Sun, Moon, Download } from 'lucide-react';
 
@@ -10,6 +11,7 @@ export default function ProductionPage() {
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [materials, setMaterials] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ date_from: '', date_to: '', shift: '', item: '', page: 1 });
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0], shift: 'day', item: '', mould: '',
@@ -58,9 +60,20 @@ export default function ProductionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
-      const data = { ...form };
+      const data = {
+        ...form,
+        shots: parseInt(form.shots, 10),
+        cavity: parseInt(form.cavity, 10),
+        weight_per_piece: parseFloat(form.weight_per_piece),
+        wastage_weight: form.wastage_weight === '' || form.wastage_weight == null
+          ? null
+          : parseFloat(form.wastage_weight),
+      };
       if (!data.material_id) delete data.material_id;
+      else data.material_id = parseInt(data.material_id, 10);
       if (editItem) {
         await productionAPI.update(editItem.id, data);
         toast.success('Updated!');
@@ -71,8 +84,9 @@ export default function ProductionPage() {
       setShowModal(false);
       fetchData();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed';
-      toast.error(msg);
+      toast.error(apiErrorMessage(err, 'Failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -295,7 +309,9 @@ export default function ProductionPage() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editItem ? 'Update' : 'Create Entry'}</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving…' : editItem ? 'Update' : 'Create Entry'}
+                </button>
               </div>
             </form>
           </div>

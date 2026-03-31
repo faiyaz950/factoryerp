@@ -33,12 +33,13 @@ class Production extends Model
     {
         static::creating(function ($production) {
             $production->production_qty = $production->shots * $production->cavity;
-            $production->total_weight = $production->production_qty * $production->weight_per_piece;
+            // weight_per_piece is stored in grams; total_weight is kg
+            $production->total_weight = ($production->production_qty * $production->weight_per_piece) / 1000;
         });
 
         static::updating(function ($production) {
             $production->production_qty = $production->shots * $production->cavity;
-            $production->total_weight = $production->production_qty * $production->weight_per_piece;
+            $production->total_weight = ($production->production_qty * $production->weight_per_piece) / 1000;
         });
     }
 
