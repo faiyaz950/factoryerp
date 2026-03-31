@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// Production (Vercel): set VITE_API_URL to your deployed Laravel API, e.g. https://api.example.com/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Dev: local Laravel. Production (Vercel): same-origin /api (proxied by api/[...path].js) unless VITE_API_URL is set.
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api');
 
 const api = axios.create({
   baseURL: API_URL,
