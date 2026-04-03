@@ -1,10 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authAPI } from '../services/api';
-import { apiErrorMessage } from '../utils/apiError';
 
 const AuthContext = createContext(null);
-
-const PENDING_2FA_KEY = 'factoryerp_pending2fa';
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -15,13 +12,7 @@ export function AuthProvider({ children }) {
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
-  const [requires2FA, setRequires2FA] = useState(() => {
-    try {
-      return sessionStorage.getItem(PENDING_2FA_KEY) === '1' && !!localStorage.getItem('token');
-    } catch {
-      return false;
-    }
-  });
+  const [requires2FA, setRequires2FA] = useState(false);
 
   const login = async (email, password) => {
     setLoading(true);
@@ -33,26 +24,15 @@ export function AuthProvider({ children }) {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       if (requires_2fa) {
-        try {
-          sessionStorage.setItem(PENDING_2FA_KEY, '1');
-        } catch { /* ignore */ }
         setRequires2FA(true);
         return { requires2FA: true, otpCode: otp_code };
       }
-      try {
-        sessionStorage.removeItem(PENDING_2FA_KEY);
-      } catch { /* ignore */ }
       return { success: true };
     } catch (err) {
       if (!err.response && (err.code === 'ERR_NETWORK' || err.message === 'Network Error')) {
-        if (import.meta.env.PROD) {
-          throw import.meta.env.VITE_API_URL
-            ? 'Cannot reach API — check CORS on Laravel and that the API URL is correct.'
-            : 'API URL missing: In Vercel → Settings → Environment Variables add VITE_API_URL (your Laravel API, e.g. https://api.example.com/api), then redeploy.';
-        }
-        throw 'Cannot reach API. Start Laravel: cd backend && php artisan serve --port=8000';
+        throw 'Cannot reach API. Start Laravel: cd backend && php artisan serve --port=8080';
       }
-      throw apiErrorMessage(err, 'Login failed');
+      throw err.response?.data?.message || err.message || 'Login failed';
     } finally {
       setLoading(false);
     }
@@ -66,12 +46,9 @@ export function AuthProvider({ children }) {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       setRequires2FA(false);
-      try {
-        sessionStorage.removeItem(PENDING_2FA_KEY);
-      } catch { /* ignore */ }
       return { success: true };
     } catch (err) {
-      throw apiErrorMessage(err, 'Verification failed');
+      throw err.response?.data?.message || 'Verification failed';
     } finally {
       setLoading(false);
     }
@@ -86,15 +63,11 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setRequires2FA(false);
-    try {
-      sessionStorage.removeItem(PENDING_2FA_KEY);
-    } catch { /* ignore */ }
   };
 
   const isAdmin = user?.role === 'admin';
   const isSupervisor = user?.role === 'supervisor';
-  // Do not treat as logged-in until OTP is done when 2FA is pending (avoids /login → dashboard redirect)
-  const isAuthenticated = !!token && !!user && !requires2FA;
+  const isAuthenticated = !!token && !!user;
 
   // Auto-logout on inactivity (15 min)
   useEffect(() => {

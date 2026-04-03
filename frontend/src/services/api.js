@@ -1,22 +1,11 @@
 import axios from 'axios';
 
-/** Laravel routes live under /api — many 404s are from env missing this suffix. */
-function normalizeApiBaseUrl(raw) {
-  if (!raw || typeof raw !== 'string') return '';
-  const u = raw.trim().replace(/\/+$/, '');
-  if (u.endsWith('/api')) return u;
-  return `${u}/api`;
-}
-
-// Vercel: set VITE_API_URL to origin only (https://api.example.com) OR full base (…/api) — both work
-const API_URL =
-  normalizeApiBaseUrl(import.meta.env.VITE_API_URL) || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-  // false: Bearer token auth does not need cookies; true can trigger mobile "local network / other apps" prompts
-  withCredentials: false,
+  withCredentials: true,
 });
 
 // Add token to requests
