@@ -23,5 +23,9 @@ export function apiErrorMessage(err, fallback = 'Request failed') {
 
   if (data?.message) return data.message;
 
+  if (status === 404) {
+    return 'API not found (404). In Vercel set VITE_API_URL to your Laravel host — use https://your-api.com only, or end with /api. Redeploy after changing.';
+  }
+
   return status ? `${fallback} (${status})` : fallback;
 }
